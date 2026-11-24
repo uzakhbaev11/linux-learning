@@ -6,7 +6,7 @@ import { chromium } from "playwright";
 const URL = process.env.SITE_URL || "http://host.docker.internal:8086/";
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
 
-const browser = await chromium.launch();
+const browser = await chromium.launch(process.env.BROWSER_CHANNEL ? { channel: process.env.BROWSER_CHANNEL } : {});
 const page = await browser.newPage({ viewport: { width: 1200, height: 800 } });
 page.on("pageerror", (e) => log("❌ JS-ошибка на странице:", e.message));
 page.on("console", (m) => m.type() === "error" && log("console.error:", m.text()));
@@ -93,15 +93,17 @@ try {
   await page.screenshot({ path: "build/screenshot-check.png", fullPage: false });
   await page.locator("#checker").screenshot({ path: "build/screenshot-checker.png" });
   await page.goto(URL.replace(/\/$/, "") + "/#/01/theory");
+  await page.waitForFunction(() => document.querySelector("#content h1")?.textContent.includes("Модуль 1"), null, { timeout: 10000 }).catch(() => {});
 
   // 4. Контент и навигация
   check("Теория модуля 1 отрисована", (await page.locator("#content h1").innerText()).includes("Модуль 1"));
   await page.screenshot({ path: "build/screenshot.png" });
   await page.click("#next-btn");
-  await page.waitForFunction(() => location.hash === "#/01/tasks");
+  await page.waitForFunction(() => document.querySelector("#content").textContent.includes("Задание 1"), null, { timeout: 10000 }).catch(() => {});
   check("Кнопка «К заданиям» открывает задания", (await page.locator("#content").innerText()).includes("Задание 1"));
   await page.click("#menu-btn");
   await page.click('#module-list a[href="#/02/theory"]');
+  await page.waitForFunction(() => document.querySelector("#module-title").textContent.includes("Файловая"), null, { timeout: 10000 }).catch(() => {});
   check("Переход к модулю 2 из списка", (await page.locator("#module-title").innerText()).includes("Файловая система"));
   check("Модуль 4 помечен «скоро»", (await page.locator("#module-list").innerText()).includes("скоро"));
   check("Прогресс: «Пройдено 1 из 12»", (await page.locator("#progress-text").innerText()).includes("Пройдено 1 из 12"));

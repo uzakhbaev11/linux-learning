@@ -1,5 +1,7 @@
 # 🌐 Linux Lab — сайт
 
+**Живой сайт: https://uzakhbaev11.github.io/linux-learning/**
+
 Курс Linux прямо в браузере: теория слева, настоящий Linux справа.
 Linux (Alpine, 32-бит x86) работает в эмуляторе [v86](https://github.com/copy/v86) на WebAssembly,
 поэтому сайту не нужен сервер — подходит GitHub Pages.
@@ -41,7 +43,11 @@ site/
 ## Этапы
 
 - [x] 0. Прототип: Linux в браузере
-- [x] 1. Каркас сайта: теория/задания + терминал, навигация
-- [ ] 3. Кнопка «Проверить» и квиз в интерфейсе
-- [ ] 4. Сжатие сохранений, автосохранение, прогресс
-- [ ] 5. GitHub Actions: сборка и деплой на GitHub Pages
+- [x] 1–2. Каркас сайта: теория/задания + терминал, навигация
+- [x] 3. Кнопка «Проверить» и квиз в интерфейсе
+- [x] 4. Сжатие сохранений, автосохранение, прогресс
+- [x] 5. GitHub Actions: сборка и деплой на GitHub Pages
+
+Браузерный тест живого сайта через свой Chrome (без Docker):
+`SITE_URL=https://uzakhbaev11.github.io/linux-learning/ BROWSER_CHANNEL=chrome node tests/browser.test.mjs`
+(нужен `npm i playwright@1.49.1` рядом со скриптом)
