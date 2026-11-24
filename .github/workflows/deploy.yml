@@ -1,0 +1,59 @@
+# Сборка и публикация сайта на GitHub Pages при каждом push в main.
+# 1) собирает Linux для браузера (Docker), 2) проверяет задания курса внутри него,
+# 3) собирает сайт (Vite), 4) публикует на https://<ник>.github.io/<репозиторий>/
+name: Deploy site
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: site
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+
+      - name: Установка зависимостей
+        run: npm ci
+
+      - name: Сборка Linux для браузера
+        run: npm run image
+
+      - name: Проверка заданий курса внутри Linux
+        run: npm run test:vm
+
+      - name: Сборка сайта
+        run: npm run build
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

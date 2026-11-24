@@ -1,0 +1,43 @@
+#!/usr/bin/env bash
+# Помощник курса. Работает ВНУТРИ учебного Linux.
+COURSE=/course
+
+usage() {
+  cat <<'EOF'
+Команды курса:
+  lab list            — список модулей
+  lab theory 1        — открыть теорию модуля 1 (выход из просмотра: q)
+  lab tasks 1         — открыть задания модуля 1
+  lab setup 1         — подготовить файлы для заданий модуля 1
+  lab check 1         — проверить задания модуля 1
+  lab check 1 -q      — проверить без вопросов квиза
+EOF
+}
+
+module_dir() {
+  local n
+  n="$(printf '%02d' "$((10#$1))" 2>/dev/null)" || return 1
+  ls -d "$COURSE"/modules/"$n"-* 2>/dev/null | head -1
+}
+
+need_module() {
+  [ -z "$1" ] && { echo "Укажи номер модуля, например: lab $CMD 1"; exit 1; }
+  DIR="$(module_dir "$1")"
+  [ -z "$DIR" ] && { echo "Модуль $1 не найден. Список: lab list"; exit 1; }
+}
+
+CMD="${1:-help}"
+case "$CMD" in
+  help|-h|--help) usage ;;
+  list)
+    for d in "$COURSE"/modules/*/; do
+      name="$(basename "$d")"
+      title="$(head -1 "$d/theory.md" 2>/dev/null | sed 's/^# //')"
+      echo "  $name — $title"
+    done ;;
+  theory) need_module "$2"; less -R "$DIR/theory.md" ;;
+  tasks)  need_module "$2"; less -R "$DIR/tasks.md" ;;
+  setup)  need_module "$2"; bash "$DIR/setup.sh" ;;
+  check)  need_module "$2"; bash "$DIR/check.sh" "${3:-}" ;;
+  *) echo "Неизвестная команда: $CMD"; usage; exit 1 ;;
+esac

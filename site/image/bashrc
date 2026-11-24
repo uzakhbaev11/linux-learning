@@ -1,0 +1,15 @@
+# ~/.bashrc учебного Linux в браузере
+[[ $- != *i* ]] && return
+
+export LANG=C.UTF-8 LC_ALL=C.UTF-8
+export TERM=xterm-256color
+export PAGER=less EDITOR=nano
+
+PS1='\[\e[1;32m\]\u@\h\[\e[0m\]:\[\e[1;34m\]\w\[\e[0m\]\$ '
+alias ls='ls --color=auto'
+alias grep='grep --color=auto'
+
+[ -f /usr/share/bash-completion/bash_completion ] && . /usr/share/bash-completion/bash_completion
+
+cd ~
+echo "🐧 Добро пожаловать в учебный Linux! Введи: lab help"

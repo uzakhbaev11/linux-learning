@@ -1,0 +1,6 @@
+{
+  "memory_size": 268435456,
+  "vga_memory_size": 8388608,
+  "uart1": true,
+  "cmdline": "rw root=host9p rootfstype=9p rootflags=trans=virtio,cache=loose modules=virtio_pci tsc=reliable init_on_free=on"
+}

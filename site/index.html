@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Linux Lab</title>
+  <meta name="description" content="Курс Linux с нуля для бэкендеров: теория и настоящий Linux прямо в браузере">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐧</text></svg>">
+</head>
+<body>
+  <header class="topbar">
+    <button id="menu-btn" class="btn ghost" aria-label="Список модулей">☰</button>
+    <a class="brand" href="#/">🐧 Linux Lab</a>
+    <span id="module-title" class="module-title"></span>
+    <span class="spacer"></span>
+    <span id="vm-status" class="vm-status">Linux загружается…</span>
+    <button id="save-btn" class="btn" title="Сохранить файлы и состояние Linux в этом браузере">💾 <span class="label">Сохранить</span></button>
+    <button id="reset-btn" class="btn" title="Вернуть Linux в чистое состояние">↺ <span class="label">Сброс</span></button>
+  </header>
+
+  <nav id="drawer" class="drawer" hidden>
+    <div class="drawer-head">
+      Модули курса
+      <div class="progress"><div id="progress-fill" class="progress-fill"></div></div>
+      <div id="progress-text" class="progress-text"></div>
+    </div>
+    <ol id="module-list" class="module-list"></ol>
+  </nav>
+  <div id="backdrop" class="backdrop" hidden></div>
+
+  <main class="layout">
+    <section id="lesson" class="lesson">
+      <div class="tabs" role="tablist">
+        <button class="tab" data-tab="theory" role="tab">📖 Теория</button>
+        <button class="tab" data-tab="tasks" role="tab">🛠 Задания</button>
+      </div>
+      <article id="content" class="content"></article>
+      <footer class="lesson-nav">
+        <button id="prev-btn" class="btn">← Назад</button>
+        <button id="check-btn" class="btn">✅ Проверить</button>
+        <button id="next-btn" class="btn primary">Дальше →</button>
+      </footer>
+    </section>
+    <div id="splitter" class="splitter" role="separator" aria-orientation="vertical" title="Потяни, чтобы изменить ширину"></div>
+    <section class="terminal-pane">
+      <div id="terminal" class="terminal"></div>
+    </section>
+  </main>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

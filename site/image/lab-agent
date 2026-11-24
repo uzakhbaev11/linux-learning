@@ -1,0 +1,19 @@
+#!/bin/bash
+# Скрытый помощник сайта. Работает на втором последовательном порту (ttyS1)
+# от имени student и выполняет команды сайта, не мешая терминалу пользователя.
+#   check N  — проверить модуль N (машинный формат, см. lib/check-lib.sh)
+#   ping     — проверка связи
+# Каждый ответ заканчивается строкой @@END
+stty -echo 2>/dev/null
+export HOME=/home/student LANG=C.UTF-8 LC_ALL=C.UTF-8
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+cd "$HOME"
+echo "@@READY"
+while IFS= read -r line; do
+  line="${line%$'\r'}"
+  case "$line" in
+    "check "[0-9]*) LAB_MACHINE=1 lab check "${line#check }" </dev/null 2>&1 ;;
+    ping) echo "@@PONG" ;;
+  esac
+  echo "@@END"
+done
