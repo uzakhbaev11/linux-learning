@@ -8,7 +8,7 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview --host 127.0.0.1 --port 8086 --strictPort",
     "image": "bash image/build.sh",
-    "test:vm": "docker run --rm -v \"$PWD\":/work -w /work node:22-slim node image/test-vm.mjs",
+    "test:vm": "node image/test-vm.mjs",
     "test:browser": "bash tests/run-browser-test.sh"
   },
   "dependencies": {

@@ -40,9 +40,8 @@ docker run --rm -v "$ROOT/site":/work -w /work node:22-slim bash -c '
   zstd -q -f -19 --rm public/images/state.bin
 '
 
-# Версия образа: сайт сравнивает её с версией сохранения в браузере
-VERSION="$(shasum -a 256 "$OUT/state.bin.zst" 2>/dev/null || sha256sum "$OUT/state.bin.zst")"
-printf '{ "version": "%s" }\n' "${VERSION:0:16}" > "$OUT/version.json"
+# Версия образа (хеш входных файлов): сайт сравнивает её с версией сохранения в браузере
+printf '{ "version": "%s" }\n' "$(bash site/image/version.sh)" > "$OUT/version.json"
 
 echo "✅ Готово: $OUT"
 du -sh "$OUT"/*

@@ -12,18 +12,19 @@
 GREEN=$'\e[32m'; RED=$'\e[31m'; YELLOW=$'\e[33m'; BOLD=$'\e[1m'; RESET=$'\e[0m'
 PASSED=0; FAILED=0; SKIP_QUIZ=0
 [ "${1:-}" = "-q" ] && SKIP_QUIZ=1
-M="${LAB_MACHINE:-}"
-T=$'\t'
+# Внутренние переменные начинаются с _LAB_, чтобы check.sh модулей их не затёрли
+_LAB_M="${LAB_MACHINE:-}"
+_LAB_T=$'\t'
 
-title()   { [ -n "$M" ] && return; echo; echo "${BOLD}$1${RESET}"; }
-section() { if [ -n "$M" ]; then echo "@@SECTION$T$1"; else echo; echo "${BOLD}— $1${RESET}"; fi; }
+title()   { [ -n "$_LAB_M" ] && return; echo; echo "${BOLD}$1${RESET}"; }
+section() { if [ -n "$_LAB_M" ]; then echo "@@SECTION$_LAB_T$1"; else echo; echo "${BOLD}— $1${RESET}"; fi; }
 pass()    {
   PASSED=$((PASSED+1))
-  if [ -n "$M" ]; then echo "@@PASS$T$1"; else echo "  ${GREEN}✔${RESET} $1"; fi
+  if [ -n "$_LAB_M" ]; then echo "@@PASS$_LAB_T$1"; else echo "  ${GREEN}✔${RESET} $1"; fi
 }
 fail()    {
   FAILED=$((FAILED+1))
-  if [ -n "$M" ]; then echo "@@FAIL$T$1$T${2:-}"; return; fi
+  if [ -n "$_LAB_M" ]; then echo "@@FAIL$_LAB_T$1$_LAB_T${2:-}"; return; fi
   echo "  ${RED}✘${RESET} $1"
   [ -n "${2:-}" ] && echo "    ${YELLOW}↳ подсказка:${RESET} $2"
 }
@@ -37,7 +38,7 @@ check() {
 # cs — учитывать регистр (для флагов вроде -S и -s)
 ask() {
   local answer ok=1
-  if [ -n "$M" ]; then echo "@@QUIZ$T$1$T$2$T$3$T${4:-}"; return; fi
+  if [ -n "$_LAB_M" ]; then echo "@@QUIZ$_LAB_T$1$_LAB_T$2$_LAB_T$3$_LAB_T${4:-}"; return; fi
   [ "$SKIP_QUIZ" = 1 ] && return
   echo
   echo "  ${BOLD}?${RESET} $1"
@@ -51,7 +52,7 @@ ask() {
 
 summary() {
   local total=$((PASSED+FAILED))
-  if [ -n "$M" ]; then echo "@@SUMMARY$T$PASSED$T$total"; exit 0; fi
+  if [ -n "$_LAB_M" ]; then echo "@@SUMMARY$_LAB_T$PASSED$_LAB_T$total"; exit 0; fi
   echo
   [ "$SKIP_QUIZ" = 1 ] && echo "(квиз пропущен)"
   if [ "$FAILED" -eq 0 ]; then

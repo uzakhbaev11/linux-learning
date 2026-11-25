@@ -31,11 +31,11 @@ COPY --chown=student:student site/image/bashrc /home/student/.bashrc
 RUN printf '[ -f ~/.bashrc ] && . ~/.bashrc\n' > /home/student/.bash_profile \
  && chown student:student /home/student/.bash_profile
 
-# Курс: те же скрипты, что и в Docker-лаборатории
-COPY lab/lab /course/lab/lab
-COPY lib /course/lib
-COPY modules /course/modules
-RUN chmod -R a+rX /course && chmod +x /course/lab/lab && ln -s /course/lab/lab /usr/local/bin/lab
+# Курс НЕ кладём в образ: сайт присылает скрипты в /course при запуске (через lab-agent).
+# Так новые модули не требуют пересборки Linux, и сохранения учеников не сбрасываются.
+RUN mkdir /course && chown student:student /course \
+ && printf '#!/bin/sh\n[ -f /course/lab/lab ] || { echo "Курс ещё загружается, подожди пару секунд и повтори."; exit 1; }\nexec bash /course/lab/lab "$@"\n' > /usr/local/bin/lab \
+ && chmod +x /usr/local/bin/lab
 
 # Службы (https://wiki.alpinelinux.org/wiki/Alpine_Linux_in_a_chroot)
 RUN for i in devfs dmesg mdev hwdrivers; do rc-update add $i sysinit; done \

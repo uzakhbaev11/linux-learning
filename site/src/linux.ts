@@ -8,9 +8,23 @@ import { FitAddon } from "@xterm/addon-fit";
 import "@xterm/xterm/css/xterm.css";
 import vmConfig from "../image/v86-config.json";
 import { vmStore } from "./storage";
+import { syncCourse, coursePath } from "./course-sync.js";
+
+// Скрипты курса (те же файлы, что и в Docker-лаборатории) — доставляются в Linux при запуске
+const COURSE_SOURCES = import.meta.glob(["../../lab/lab", "../../lib/*.sh", "../../modules/*/*"], {
+  query: "?raw",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
+const COURSE_FILES = Object.entries(COURSE_SOURCES).map(([path, text]) => ({
+  path: coursePath(path),
+  data: new TextEncoder().encode(text),
+}));
 
 const BASE = import.meta.env.BASE_URL;
 const AUTOSAVE_MS = 60_000;
+// Открой сайт с ?debug в адресе, чтобы видеть в консоли ответы скрытого помощника
+const DEBUG = new URLSearchParams(location.search).has("debug");
 
 export type Status = { text: string; kind: "loading" | "ok" | "error" };
 
@@ -65,6 +79,7 @@ export class Linux {
   private imageVersion = "";
   private dirty = false;
   private saving: Promise<void> | null = null;
+  private courseReady: Promise<void> = Promise.resolve();
 
   // Скрытый канал ttyS1
   private agentBuf: number[] = [];
@@ -150,12 +165,14 @@ export class Linux {
     // Скрытый канал: собираем строки до @@END
     const dec = new TextDecoder();
     this.emulator.add_listener("serial1-output-byte", (b: number) => {
+      if (b === 0x11 || b === 0x13) return; // XON/XOFF — служебные символы терминала
       if (b !== 10) {
         this.agentBuf.push(b);
         return;
       }
       const line = dec.decode(new Uint8Array(this.agentBuf)).replace(/\r$/, "");
       this.agentBuf = [];
+      if (DEBUG) console.log("[agent]", JSON.stringify(line));
       if (line === "@@END") {
         const lines = this.agentLines;
         this.agentLines = [];
@@ -178,15 +195,20 @@ export class Linux {
         await this.emulator.run();
         this.term.clear();
         this.ready = true;
-        this.onStatus({ text: "Linux восстановлен ✓", kind: "ok" });
         this.syncSize();
       } else {
         this.ready = true;
-        this.onStatus({ text: "Linux запущен ✓", kind: "ok" });
         setTimeout(() => this.syncSize(), 300);
       }
       this.term.focus();
       this.startAutosave();
+      // «Запущен» показываем только когда курс уже внутри Linux — иначе `lab` ответит «курс загружается»
+      this.onStatus({ text: "Загружаю курс…", kind: "loading" });
+      this.courseReady = this.installCourse();
+      this.courseReady.then(
+        () => this.onStatus({ text: saved ? "Linux восстановлен ✓" : "Linux запущен ✓", kind: "ok" }),
+        () => {},
+      );
     });
   }
 
@@ -224,10 +246,28 @@ export class Linux {
     return p;
   }
 
+  /** Установить/обновить скрипты курса внутри Linux (если версия изменилась) */
+  private async installCourse() {
+    try {
+      const t0 = performance.now();
+      const updated = await syncCourse((cmd: string) => this.agent(cmd), COURSE_FILES);
+      if (DEBUG) console.log(`[course] ${updated ? "установлен" : "актуален"} за ${Math.round(performance.now() - t0)} мс`);
+    } catch (e) {
+      this.onStatus({ text: "Не удалось загрузить курс: " + (e as Error).message, kind: "error" });
+      throw e;
+    }
+  }
+
   /** Проверить задания модуля (как `lab check N`, но результат — для интерфейса) */
   async check(num: string): Promise<CheckResult> {
     if (!this.ready) throw new Error("Linux ещё загружается");
-    return parseCheck(await this.agent(`check ${Number(num)}`));
+    await this.courseReady;
+    const lines = await this.agent(`check ${Number(num)}`);
+    const res = parseCheck(lines);
+    if (!lines.some((l) => l.startsWith("@@SUMMARY\t"))) {
+      console.warn("[agent] неожиданный ответ проверки:", lines);
+    }
+    return res;
   }
 
   // ---------- Сохранение ----------

@@ -3,13 +3,14 @@
 // Запуск: site/tests/run-browser-test.sh
 import { chromium } from "playwright";
 
-const URL = process.env.SITE_URL || "http://host.docker.internal:8086/";
+const URL = (process.env.SITE_URL || "http://host.docker.internal:8086/").replace(/\/?$/, "/") + "?debug";
+const at = (hash) => URL + hash; // все переходы — внутри одной страницы (без перезагрузки)
 const log = (...a) => console.log(new Date().toISOString().slice(11, 19), ...a);
 
 const browser = await chromium.launch(process.env.BROWSER_CHANNEL ? { channel: process.env.BROWSER_CHANNEL } : {});
 const page = await browser.newPage({ viewport: { width: 1200, height: 800 } });
 page.on("pageerror", (e) => log("❌ JS-ошибка на странице:", e.message));
-page.on("console", (m) => m.type() === "error" && log("console.error:", m.text()));
+page.on("console", (m) => (m.type() === "error" || m.text().startsWith("[course]")) && log("console:", m.text()));
 
 const termText = () => page.locator(".xterm-rows").innerText();
 async function waitForText(re, timeout = 180000) {
@@ -35,6 +36,7 @@ try {
   let t0 = Date.now();
   await page.goto(URL);
   await waitForText(/student@linux-lab/);
+  await page.waitForFunction(() => /запущен|восстановлен/.test(document.querySelector("#vm-status").textContent), null, { timeout: 120000 });
   log(`Linux готов за ${((Date.now() - t0) / 1000).toFixed(1)} с`);
   check("Статус «Linux запущен»", /запущен/.test(await page.locator("#vm-status").innerText()));
 
@@ -67,7 +69,7 @@ try {
   check("Сохранение сжато (меньше 25 МБ)", savedMB < 25);
 
   // 3б. Проверка заданий и квиз (модуль 1)
-  await page.goto(URL.replace(/\/$/, "") + "/#/01/tasks");
+  await page.goto(at("#/01/tasks"));
   await page.click("#check-btn");
   await page.waitForSelector("#check-results .score", { timeout: 60000 });
   check("Проверка без выполненных заданий показывает ✘ и подсказку",
@@ -90,9 +92,24 @@ try {
   await page.click("#quiz-btn");
   check("Квиз пройден → модуль отмечен пройденным",
     (await page.locator("#quiz-result").innerText()).includes("Модуль 1 пройден"));
+  // 3в. Сценарий из жалобы: модуль 2, часть заданий → «Сохранить» → «Проверить»
+  await page.goto(at("#/02/tasks"));
+  await page.waitForFunction(() => document.querySelector("#module-title").textContent.includes("Файловая"), null, { timeout: 10000 });
+  await type("clear; lab setup 2 </dev/null && cd ~/m02 && mkdir -p myapp/{src,tests,docs,config} && cp -r myapp myapp-backup && mv myapp/docs myapp/documentation && rm -r trash; cd; echo M2-PARTIAL");
+  await waitForText(/^M2-PARTIAL/m, 60000);
+  await page.click("#save-btn");
+  await page.waitForFunction(() => /Сохранено/.test(document.querySelector("#vm-status").textContent), null, { timeout: 60000 });
+  await page.click("#check-btn");
+  await page.waitForFunction(() => /Задания:|не вернула|Не получилось/.test(document.querySelector("#check-results")?.textContent || ""), null, { timeout: 60000 });
+  const m2 = await page.locator("#check-results").innerText();
+  check("Модуль 2: после «Сохранить» проверка возвращает результаты", /Задания: \d+\/13/.test(m2));
+  check("Модуль 2: выполненное засчитано, невыполненное — с подсказкой",
+    (await page.locator("#check-results li.ok").count()) >= 3 && m2.includes("подсказка"));
+  await page.goto(at("#/01/tasks"));
+
   await page.screenshot({ path: "build/screenshot-check.png", fullPage: false });
   await page.locator("#checker").screenshot({ path: "build/screenshot-checker.png" });
-  await page.goto(URL.replace(/\/$/, "") + "/#/01/theory");
+  await page.goto(at("#/01/theory"));
   await page.waitForFunction(() => document.querySelector("#content h1")?.textContent.includes("Модуль 1"), null, { timeout: 10000 }).catch(() => {});
 
   // 4. Контент и навигация

@@ -1,19 +1,49 @@
 #!/bin/bash
 # Скрытый помощник сайта. Работает на втором последовательном порту (ttyS1)
 # от имени student и выполняет команды сайта, не мешая терминалу пользователя.
-#   check N  — проверить модуль N (машинный формат, см. lib/check-lib.sh)
-#   ping     — проверка связи
+#
+#   ping                  — проверка связи                → @@PONG
+#   check N               — проверить модуль N (машинный формат, см. lib/check-lib.sh)
+#   course-version        — версия установленного курса   → @@VERSION<TAB>версия
+#   course-begin          — начать загрузку новой версии курса
+#   course-tar SHA256 B64 — архив курса (tar.gz в base64) с контрольной суммой
+#   course-commit ВЕРСИЯ  — установить загруженный курс в /course
+#
+# Скрипты курса не «запечены» в образ: сайт присылает их при запуске.
+# Поэтому новые модули появляются без пересборки Linux и без потери сохранений.
 # Каждый ответ заканчивается строкой @@END
-stty -echo 2>/dev/null
+# -icanon: без лимита 4096 байт на строку (файлы курса приходят одной строкой)
+# -ixon -ixoff: без управляющих символов XON/XOFF в ответах
+stty -echo -icanon min 1 time 0 -ixon -ixoff 2>/dev/null
 export HOME=/home/student LANG=C.UTF-8 LC_ALL=C.UTF-8
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+COURSE=/course
+NEW="$HOME/.cache/lab-course-new"
 cd "$HOME"
 echo "@@READY"
 while IFS= read -r line; do
   line="${line%$'\r'}"
+  [ -z "$line" ] && continue
   case "$line" in
-    "check "[0-9]*) LAB_MACHINE=1 lab check "${line#check }" </dev/null 2>&1 ;;
     ping) echo "@@PONG" ;;
+    "check "[0-9]*) LAB_MACHINE=1 lab check "${line#check }" </dev/null 2>&1 ;;
+    course-version) printf '@@VERSION\t%s\n' "$(cat "$COURSE/.version" 2>/dev/null)" ;;
+    course-begin) rm -rf "$NEW" && mkdir -p "$NEW" && echo "@@OK" ;;
+    "course-tar "*)
+      rest="${line#course-tar }"; sum="${rest%% *}"; data="${rest#* }"
+      printf '%s' "$data" | base64 -d > "$NEW.tgz" \
+        && [ "$(sha256sum < "$NEW.tgz")" = "$sum  -" ] \
+        && tar -xzf "$NEW.tgz" -C "$NEW" && rm -f "$NEW.tgz" && echo "@@OK" \
+        || printf '@@ERR\tархив повреждён\n'
+      ;;
+    "course-commit "*)
+      version="${line#course-commit }"
+      chmod -R u+w "$COURSE" 2>/dev/null
+      find "$COURSE" -mindepth 1 -delete 2>/dev/null
+      cp -a "$NEW/." "$COURSE/" && echo "$version" > "$COURSE/.version" \
+        && chmod -R a-w,a+rX "$COURSE" && rm -rf "$NEW" && echo "@@OK"
+      ;;
+    *) printf '@@ERR\tunknown command\n' ;;
   esac
   echo "@@END"
 done

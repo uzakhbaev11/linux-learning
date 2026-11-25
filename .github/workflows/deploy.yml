@@ -1,6 +1,9 @@
 # Сборка и публикация сайта на GitHub Pages при каждом push в main.
-# 1) собирает Linux для браузера (Docker), 2) проверяет задания курса внутри него,
-# 3) собирает сайт (Vite), 4) публикует на https://<ник>.github.io/<репозиторий>/
+#
+# Образ Linux пересобирается ТОЛЬКО когда меняются файлы, из которых он собран
+# (site/image/*, версия v86). Готовые образы хранятся в релизах «image-<версия>».
+# Поэтому новые модули курса не меняют Linux, и сохранения учеников не сбрасываются.
+# Скрипты курса (lab, lib, modules) сайт доставляет в Linux сам при запуске.
 name: Deploy site
 
 on:
@@ -9,7 +12,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write   # создавать релизы с образом Linux
   pages: write
   id-token: write
 
@@ -23,6 +26,8 @@ jobs:
     defaults:
       run:
         working-directory: site
+    env:
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
 
@@ -35,11 +40,35 @@ jobs:
       - name: Установка зависимостей
         run: npm ci
 
+      - name: Версия образа Linux
+        id: image
+        run: echo "version=$(bash image/version.sh)" >> "$GITHUB_OUTPUT"
+
+      - name: Готовый образ из релиза (если уже собирали)
+        id: cached
+        run: |
+          if gh release download "image-${{ steps.image.outputs.version }}" -p image.tar.gz -D "$RUNNER_TEMP"; then
+            mkdir -p public/images
+            tar -xzf "$RUNNER_TEMP/image.tar.gz" -C public/images
+            echo "hit=true" >> "$GITHUB_OUTPUT"
+            echo "Взят готовый образ image-${{ steps.image.outputs.version }}"
+          fi
+
       - name: Сборка Linux для браузера
+        if: steps.cached.outputs.hit != 'true'
         run: npm run image
 
       - name: Проверка заданий курса внутри Linux
         run: npm run test:vm
+
+      - name: Сохранить образ в релиз
+        if: steps.cached.outputs.hit != 'true'
+        run: |
+          tar -czf "$RUNNER_TEMP/image.tar.gz" -C public/images .
+          gh release create "image-${{ steps.image.outputs.version }}" "$RUNNER_TEMP/image.tar.gz" \
+            --title "Linux image ${{ steps.image.outputs.version }}" \
+            --notes "Собранный Linux для сайта. Создаётся автоматически из site/image/." \
+            --prerelease
 
       - name: Сборка сайта
         run: npm run build
