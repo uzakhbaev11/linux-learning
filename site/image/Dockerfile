@@ -13,6 +13,29 @@ RUN apk add --no-cache \
       less nano vim tree file procps-ng htop sudo shadow ncurses \
       mandoc man-pages docs
 
+# Модули 06–11: процессы, архивы, cron, сеть, SSH
+#   psmisc (pstree, killall), iproute2 (ss, ip), curl, busybox-extras (httpd — учебный веб-сервер),
+#   openssh (сервер и клиент), cronie (cron как в Ubuntu), GNU tar и gzip
+RUN apk add --no-cache psmisc iproute2 curl busybox-extras openssh cronie tar gzip \
+ && ssh-keygen -A \
+ && printf 'auto lo\niface lo inet loopback\n' > /etc/network/interfaces \
+ && printf '#!/bin/sh\n# docker export оставляет /etc/hosts пустым — восстанавливаем при загрузке\n[ -s /etc/hosts ] || printf "127.0.0.1\\tlocalhost linux-lab\\n::1\\tlocalhost\\n" > /etc/hosts\n' > /etc/local.d/hosts.start \
+ && chmod +x /etc/local.d/hosts.start
+
+# Модуль 07: свой репозиторий пакетов внутри Linux — в браузере нет интернета,
+# а научиться ставить программы (sudo apk add jq) хочется. Индекс подписан своим ключом.
+RUN apk update -q && apk upgrade -q && apk add -q abuild \
+ && mkdir -p /srv/repo/x86 && cd /srv/repo/x86 \
+ && apk fetch -q jq oniguruma figlet \
+ && apk index -q -o APKINDEX.tar.gz *.apk \
+ && abuild-keygen -a -n -q 2>/dev/null && abuild-sign -q -k /root/.abuild/*.rsa APKINDEX.tar.gz \
+ && cp /root/.abuild/*.rsa.pub /etc/apk/keys/ \
+ && apk del -q abuild && rm -rf /root/.abuild /var/cache/apk/* \
+ && echo /srv/repo > /etc/apk/repositories
+
+# Модуль 11: «сервер» для SSH — пользователь deploy (пароль: deploy) на этом же компьютере
+RUN adduser -D -s /bin/bash deploy && echo 'deploy:deploy' | chpasswd
+
 # Пользователь student (пароль: student), автологин на последовательной консоли
 RUN adduser -D -s /bin/bash student \
  && echo 'student:student' | chpasswd \
@@ -40,6 +63,8 @@ RUN mkdir /course && chown student:student /course \
 # Службы (https://wiki.alpinelinux.org/wiki/Alpine_Linux_in_a_chroot)
 RUN for i in devfs dmesg mdev hwdrivers; do rc-update add $i sysinit; done \
  && for i in hwclock modules sysctl hostname syslog bootmisc; do rc-update add $i boot; done \
+ && rc-update add networking boot && rc-update add local boot \
+ && for i in sshd cronie; do rc-update add $i default; done \
  && rc-update add killprocs shutdown
 
 # initramfs с модулями 9p — корневая файловая система подгружается по сети из файлов сайта

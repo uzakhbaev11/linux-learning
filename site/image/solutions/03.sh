@@ -1,0 +1,2 @@
+# Решение модуля 3 (то, что сделал бы ученик). Каждая строка выполняется в терминале student.
+cd ~/m03 && head -n 10 app.log > first10.txt && tail -n 3 app.log > last3.txt && grep -c ERROR app.log > errors_count.txt && grep -n ERROR app.log > errors.txt && grep user_id=1337 app.log > user1337.txt && grep -v INFO app.log > not_info.txt && sed -i "s/port=8080/port=3000/; s/debug=true/debug=false/" config.ini && echo "I can exit vim" > vim.txt && echo "10:00:25 [INFO] SECRET=orbita" > live.log; cd

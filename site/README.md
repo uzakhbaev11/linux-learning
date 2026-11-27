@@ -15,7 +15,7 @@ npm run image        # собрать Linux для браузера (нужен 
 npm run dev          # разработка: http://localhost:5173 (обновляется при изменениях)
 npm run build        # сборка сайта → dist/
 npm run preview      # посмотреть собранный сайт: http://127.0.0.1:8086
-npm run test:vm      # автотест: задания модулей внутри Linux
+npm run test:vm      # автотест: задания модулей внутри Linux (решения: image/solutions/NN.sh)
 npm run test:browser # автотест в настоящем Chrome (нужен запущенный preview)
 ```
 

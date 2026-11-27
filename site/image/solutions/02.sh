@@ -1,0 +1,2 @@
+# Решение модуля 2 (то, что сделал бы ученик). Каждая строка выполняется в терминале student.
+cd ~/m02 && mkdir -p myapp/{src,tests,docs,config} && touch myapp/README.md myapp/src/main.py && cd downloads && mkdir images documents music && mv *.jpg *.png images/ && mv *.pdf *.txt documents/ && mv *.mp3 music/ && rm *.tmp && cd .. && mkdir found && cp "$(find maze -name treasure.txt)" found/ && realpath "$(find maze -size +1M)" > big.txt && cp -r myapp myapp-backup && mv myapp/docs myapp/documentation && rm -r trash; cd

@@ -98,11 +98,22 @@ function checkerHtml(num: string): string {
       <button id="run-check" class="btn primary">Проверить задания</button>
       <div id="check-results"></div>
       <div id="quiz"></div>
+      <p class="manual-mark muted">
+        ${done
+          ? `<button id="mark-btn" class="link-btn">Снять отметку «пройден»</button>`
+          : `Уже проходил этот модуль раньше (или в виртуальной машине)? <button id="mark-btn" class="link-btn">Отметить пройденным</button>`}
+      </p>
     </section>`;
 }
 
 function bindChecker(num: string) {
   $("#run-check").onclick = () => runCheck(num);
+  // Ручная отметка: если файлы в Linux сбросились или модуль проверялся вне браузера (модуль 12)
+  $("#mark-btn").onclick = () => {
+    const done = !progress.done(num);
+    progress.set(num, { tasks: done, quiz: done });
+    render();
+  };
 }
 
 let checking = false;

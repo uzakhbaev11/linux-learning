@@ -1,0 +1,4 @@
+# Решение модуля 8 (то, что сделал бы ученик). Каждая строка выполняется в терминале student.
+cd ~/m08 && printf '%s\n' '#!/usr/bin/env bash' 'if [[ $# -eq 0 ]]; then echo "Использование: greet.sh ИМЯ" >&2; exit 1; fi' 'echo "Привет, $1!"' > greet.sh && chmod +x greet.sh; cd
+cd ~/m08 && printf '%s\n' '#!/usr/bin/env bash' 'set -euo pipefail' 'if [[ ! -f "$1" ]]; then echo "Файл не найден: $1"; exit 2; fi' 'for lvl in INFO WARN ERROR; do echo "$lvl: $(grep -c "\[$lvl\]" "$1" || true)"; done' > log_summary.sh && chmod +x log_summary.sh; cd
+cd ~/m08 && printf '%s\n' '#!/usr/bin/env bash' 'problems=0' 'check_path() {' '  if [[ -e "$1" ]]; then echo "OK $1"; else echo "MISSING $1"; problems=$((problems + 1)); fi' '}' 'while read -r path; do check_path "$path"; done < "$1"' 'echo "Проблем: $problems"' '[[ $problems -eq 0 ]]' > healthcheck.sh && chmod +x healthcheck.sh; cd

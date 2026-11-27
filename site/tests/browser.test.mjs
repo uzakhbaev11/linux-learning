@@ -42,7 +42,7 @@ try {
 
   // 2. Команды, кириллица, размер терминала
   await type("echo 'Привет, Linux!' > hello.txt && cat hello.txt && stty size && lab list");
-  const out = await waitForText(/03-text-and-editors/);
+  const out = await waitForText(/12-systemd-and-logs[^\n]*\n[^\n]*student@linux-lab/);
   check("Кириллица в файле и в выводе", out.includes("Привет, Linux!"));
   check("stty знает размер окна", /\n\d+ \d+\n/.test(out) && !/\n0 0\n/.test(out));
   check("Команда lab работает", out.includes("01-terminal-basics"));
@@ -122,8 +122,18 @@ try {
   await page.click('#module-list a[href="#/02/theory"]');
   await page.waitForFunction(() => document.querySelector("#module-title").textContent.includes("Файловая"), null, { timeout: 10000 }).catch(() => {});
   check("Переход к модулю 2 из списка", (await page.locator("#module-title").innerText()).includes("Файловая система"));
-  check("Модуль 4 помечен «скоро»", (await page.locator("#module-list").innerText()).includes("скоро"));
+  check("Все 12 модулей доступны (нет «скоро»)", !(await page.locator("#module-list").innerText()).includes("скоро"));
   check("Прогресс: «Пройдено 1 из 12»", (await page.locator("#progress-text").innerText()).includes("Пройдено 1 из 12"));
+
+  // Ручная отметка «пройден» (модуль 12 проверяется в ВМ, а не в браузере)
+  await page.goto(at("#/12/tasks"));
+  await page.waitForSelector("#mark-btn", { timeout: 10000 });
+  await page.click("#mark-btn");
+  await page.waitForFunction(() => /Пройдено 2 из 12/.test(document.querySelector("#progress-text").textContent), null, { timeout: 10000 }).catch(() => {});
+  check("Ручная отметка: «Пройдено 2 из 12»", (await page.locator("#progress-text").innerText()).includes("Пройдено 2 из 12"));
+  await page.click("#mark-btn");
+  await page.waitForFunction(() => /Пройдено 1 из 12/.test(document.querySelector("#progress-text").textContent), null, { timeout: 10000 }).catch(() => {});
+  check("Отметку можно снять", (await page.locator("#progress-text").innerText()).includes("Пройдено 1 из 12"));
 
   // 5. Телефон
   await page.setViewportSize({ width: 390, height: 800 });

@@ -157,6 +157,8 @@ body.resizing { cursor: col-resize; user-select: none; }
 
 /* ---------- Проверка и квиз ---------- */
 .checker { margin-top: 32px; }
+.manual-mark { margin-top: 24px; font-size: 13px; }
+.link-btn { background: none; border: 0; padding: 0; color: var(--accent); text-decoration: underline; cursor: pointer; font: inherit; }
 .checker .btn.primary { padding: 8px 16px; font-size: 14px; }
 .checker .btn:disabled { opacity: 0.6; cursor: wait; }
 .muted { color: var(--muted); }

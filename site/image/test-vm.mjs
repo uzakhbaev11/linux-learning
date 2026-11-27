@@ -68,12 +68,17 @@ async function shell(cmd, timeoutMs = 120000) {
   return text();
 }
 
-// Решения заданий (то, что сделал бы ученик)
-const SOLUTIONS = {
-  1: `cd ~/m01 && whoami > me.txt && uname -a > system.txt && echo penguin > code.txt && (cd /etc && ls > ~/m01/etc-list.txt) && seq 12 > history.txt; cd`,
-  2: `cd ~/m02 && mkdir -p myapp/{src,tests,docs,config} && touch myapp/README.md myapp/src/main.py && cd downloads && mkdir images documents music && mv *.jpg *.png images/ && mv *.pdf *.txt documents/ && mv *.mp3 music/ && rm *.tmp && cd .. && mkdir found && cp "$(find maze -name treasure.txt)" found/ && realpath "$(find maze -size +1M)" > big.txt && cp -r myapp myapp-backup && mv myapp/docs myapp/documentation && rm -r trash; cd`,
-  3: `cd ~/m03 && head -n 10 app.log > first10.txt && tail -n 3 app.log > last3.txt && grep -c ERROR app.log > errors_count.txt && grep -n ERROR app.log > errors.txt && grep user_id=1337 app.log > user1337.txt && grep -v INFO app.log > not_info.txt && sed -i "s/port=8080/port=3000/; s/debug=true/debug=false/" config.ini && echo "I can exit vim" > vim.txt && echo "10:00:25 [INFO] SECRET=orbita" > live.log; cd`,
-};
+// Решения заданий (то, что сделал бы ученик): image/solutions/NN.sh.
+// Каждая непустая строка (кроме комментариев) выполняется в терминале student по очереди.
+// «# SKIP: причина» — модуль нельзя выполнить в браузере (проверяется только формат ответа).
+function solution(m) {
+  const f = path.join(SITE, "image/solutions", String(m).padStart(2, "0") + ".sh");
+  if (!fs.existsSync(f)) return null;
+  const text = fs.readFileSync(f, "utf8");
+  const skip = text.match(/^# SKIP: (.+)$/m)?.[1];
+  const lines = text.split("\n").filter((l) => l.trim() && !l.trimStart().startsWith("#"));
+  return { skip, lines };
+}
 
 // Строгая проверка машинного формата: ровно то, что умеет разбирать сайт
 const FORMAT = {
@@ -113,15 +118,23 @@ emulator.add_listener("emulator-started", async () => {
     ok(/linux-lab/.test(info) && /student/.test(info), "hostname linux-lab, пользователь student");
     ok(/ls\.1/.test(info), "man-страницы на месте");
 
-    const modules = fs.readdirSync(path.join(ROOT, "modules")).map((d) => Number(d.slice(0, 2))).sort();
+    const only = process.env.ONLY ? process.env.ONLY.split(",").map(Number) : null; // ONLY=4,5 — только эти модули
+    const modules = fs.readdirSync(path.join(ROOT, "modules")).map((d) => Number(d.slice(0, 2))).sort((a, b) => a - b)
+      .filter((m) => !only || only.includes(m));
     for (const m of modules) {
       console.log(`Модуль ${m}:`);
-      if (!SOLUTIONS[m]) { ok(false, `нет решения для модуля ${m} в test-vm.mjs — добавь его в SOLUTIONS`); continue; }
+      const sol = solution(m);
+      if (!sol) { ok(false, `нет решения: добавь site/image/solutions/${String(m).padStart(2, "0")}.sh`); continue; }
+      if (sol.skip) {
+        const res = validate(await agent(`check ${m}`));
+        ok(res.errors.length === 0, `формат ответа (модуль вне браузера: ${sol.skip})` + (res.errors.length ? ": " + res.errors.join("; ") : ""));
+        continue;
+      }
       await shell(`lab setup ${m} </dev/null`);
       const before = validate(await agent(`check ${m}`));
       ok(before.errors.length === 0, "формат ответа ДО выполнения заданий" + (before.errors.length ? ": " + before.errors.join("; ") : ""));
       ok(before.total > 0 && before.passed < before.total, `до выполнения не всё засчитано (${before.passed}/${before.total})`);
-      await shell(SOLUTIONS[m]);
+      for (const line of sol.lines) await shell(line, 300000);
       const after = validate(await agent(`check ${m}`));
       ok(after.errors.length === 0, "формат ответа ПОСЛЕ выполнения" + (after.errors.length ? ": " + after.errors.join("; ") : ""));
       ok(after.total > 0 && after.passed === after.total, `после выполнения всё засчитано (${after.passed}/${after.total})`);
