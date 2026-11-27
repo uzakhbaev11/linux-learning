@@ -17,9 +17,9 @@ check "errors_count.txt — количество ERROR" "grep -c" \
   '[ "$(tr -d "[:space:]" < "$D/errors_count.txt")" = "$(grep -c ERROR "$L")" ]'
 check "errors.txt — строки ERROR с номерами" "grep -n" \
   'diff -q <(grep -n ERROR "$L") "$D/errors.txt"'
-check "user1337.txt — строки пользователя 1337" "grep \"user_id=1337\"" \
+check "user1337.txt — строки пользователя 1337" "grep \"user_id=1337\" — без номеров строк" \
   'diff -q <(grep "user_id=1337" "$L") "$D/user1337.txt"'
-check "not_info.txt — строки без INFO" "grep -v" \
+check "not_info.txt — строки без INFO" "grep -v — без номеров строк" \
   'diff -q <(grep -v INFO "$L") "$D/not_info.txt"'
 
 section "Задание 3"
