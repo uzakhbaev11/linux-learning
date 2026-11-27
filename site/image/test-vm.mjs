@@ -72,7 +72,7 @@ async function shell(cmd, timeoutMs = 120000) {
 const SOLUTIONS = {
   1: `cd ~/m01 && whoami > me.txt && uname -a > system.txt && echo penguin > code.txt && (cd /etc && ls > ~/m01/etc-list.txt) && seq 12 > history.txt; cd`,
   2: `cd ~/m02 && mkdir -p myapp/{src,tests,docs,config} && touch myapp/README.md myapp/src/main.py && cd downloads && mkdir images documents music && mv *.jpg *.png images/ && mv *.pdf *.txt documents/ && mv *.mp3 music/ && rm *.tmp && cd .. && mkdir found && cp "$(find maze -name treasure.txt)" found/ && realpath "$(find maze -size +1M)" > big.txt && cp -r myapp myapp-backup && mv myapp/docs myapp/documentation && rm -r trash; cd`,
-  3: `cd ~/m03 && head -n 10 app.log > first10.txt && tail -n 3 app.log > last3.txt && grep -c ERROR app.log > errors_count.txt && grep -n ERROR app.log > errors.txt && grep user_id=1337 app.log > user1337.txt && grep -v INFO app.log > not_info.txt && sed -i "s/port=8080/port=3000/; s/debug=true/debug=false/" config.ini && echo "I can exit vim" > vim.txt; cd`,
+  3: `cd ~/m03 && head -n 10 app.log > first10.txt && tail -n 3 app.log > last3.txt && grep -c ERROR app.log > errors_count.txt && grep -n ERROR app.log > errors.txt && grep user_id=1337 app.log > user1337.txt && grep -v INFO app.log > not_info.txt && sed -i "s/port=8080/port=3000/; s/debug=true/debug=false/" config.ini && echo "I can exit vim" > vim.txt && echo "10:00:25 [INFO] SECRET=orbita" > live.log; cd`,
 };
 
 // Строгая проверка машинного формата: ровно то, что умеет разбирать сайт

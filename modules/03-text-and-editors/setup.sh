@@ -35,8 +35,7 @@ cat > "$D/generator.sh" <<'EOF'
 #!/usr/bin/env bash
 LOG="$HOME/m03/live.log"
 : > "$LOG"
-echo "Генератор пишет в $LOG. Смотри во втором терминале: tail -f $LOG"
-echo "Остановить: Ctrl+C"
+echo "Генератор запущен: 40 секунд пишет строки в $LOG"
 for i in $(seq 1 40); do
   if [ "$i" -eq 25 ]; then
     echo "$(date +%T) [INFO] SECRET=orbita" >> "$LOG"
@@ -45,7 +44,7 @@ for i in $(seq 1 40); do
   fi
   sleep 1
 done
-echo "Генератор закончил."
+echo "Генератор закончил (нажми Enter, если не видно приглашения)."
 EOF
 
 echo "✅ Модуль 3 подготовлен: $D"

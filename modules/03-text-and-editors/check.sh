@@ -33,6 +33,10 @@ section "Задание 4"
 check "vim.txt содержит строку 'I can exit vim'" "i → текст → Esc → :wq" \
   'grep -qx "I can exit vim" "$D/vim.txt"'
 
+section "Задание 5"
+check "Генератор запускался, в live.log есть секретное слово" "bash ~/m03/generator.sh &  и подожди ~25 секунд" \
+  'grep -q "SECRET=" "$D/live.log"'
+
 section "Квиз"
 ask "Какое секретное слово появилось в live.log? (задание 5)" "запусти generator.sh и tail -f" 'orbita|secret=orbita'
 ask "Как выйти из vim БЕЗ сохранения?" "двоеточие, q и восклицательный знак" ':q!'
